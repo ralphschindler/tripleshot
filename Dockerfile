@@ -32,6 +32,7 @@ RUN apt-add-repository -k hkp://ha.pool.sks-keyservers.net:80 -y ppa:ondrej/php 
         php7.1-xml \
         php7.1-sqlite \
         php7.1-pgsql \
+        php7.1-bcmath \
         ca-certificates \
         nginx \
         nodejs \
