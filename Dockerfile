@@ -12,9 +12,9 @@ EXPOSE 80
 
 CMD /usr/local/bin/bootstrap-web
 
-ADD . /tripleshot-install
+ADD . /tripleshot-build
 
-RUN /tripleshot-install/tripleshot-packages.sh
-RUN /tripleshot-install/tripleshot-setup.sh
+RUN /tripleshot-build/tripleshot-packages.sh && \
+    /tripleshot-build/tripleshot-setup.sh
 
 WORKDIR /tripleshot
