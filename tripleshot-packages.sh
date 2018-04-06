@@ -27,7 +27,9 @@ DEBIAN_FRONTEND=noninteractive \
     php7.2-zip \
     ca-certificates \
     nginx \
-    nodejs
+    nodejs \
+    mysql-client \
+    nano
 
 # cleanup after one's self
 apt-get clean 
