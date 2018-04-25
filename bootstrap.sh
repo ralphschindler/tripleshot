@@ -2,8 +2,8 @@
 
 # Production vs. Development
 if [ "$APP_ENV" != "production" ]; then
-    phpdismod -v 7.1 -s ALL newrelic
-    phpenmod -v 7.1 -s ALL xdebug
+    phpdismod -v 7.2 -s ALL newrelic
+    phpenmod -v 7.2 -s ALL xdebug
 fi
 
 # PHP FPM Service
