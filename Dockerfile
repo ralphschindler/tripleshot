@@ -1,20 +1,21 @@
-FROM phusion/baseimage:0.10.0
+FROM phusion/baseimage:0.11
 
 ENV TERM="xterm-256color" \
     LC_ALL="en_US.UTF-8" \
     LANG="en_US.UTF-8" \
-    APP_NAME="tripleshot-app" \
+    APP_NAME="home" \
     COMPOSER_ALLOW_SUPERUSER="1" \
     APP_ENV="production" \
-    PATH="$PATH:/tripleshot/vendor/bin:/tripleshot/node_modules/.bin:/tripleshot"
+    PATH="$PATH:/app/vendor/bin:/app/node_modules/.bin:/app"
 
 EXPOSE 80
 
-CMD /usr/local/bin/bootstrap-web
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
-ADD . /tripleshot-build
+CMD ["/usr/local/bin/bootstrap-web"]
 
-RUN /tripleshot-build/tripleshot-packages.sh && \
-    /tripleshot-build/tripleshot-setup.sh
+ADD . /build
 
-WORKDIR /tripleshot
+RUN /build/packages.sh && /build/setup.sh
+
+WORKDIR /app

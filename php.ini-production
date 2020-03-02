@@ -83,7 +83,7 @@
 ; development version only in development environments, as errors shown to
 ; application users can inadvertently leak otherwise secure information.
 
-; This is the php.ini-development INI file.
+; This is the php.ini-production INI file.
 
 ;;;;;;;;;;;;;;;;;;;
 ; Quick Reference ;
@@ -107,11 +107,6 @@
 ;   Default Value: E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED
 ;   Development Value: E_ALL
 ;   Production Value: E_ALL & ~E_DEPRECATED & ~E_STRICT
-
-; html_errors
-;   Default Value: On
-;   Development Value: On
-;   Production value: On
 
 ; log_errors
 ;   Default Value: Off
@@ -289,6 +284,13 @@ implicit_flush = Off
 ; callback-function.
 unserialize_callback_func =
 
+; The unserialize_max_depth specifies the default depth limit for unserialized
+; structures. Setting the depth limit too high may result in stack overflows
+; during unserialization. The unserialize_max_depth ini setting can be
+; overridden by the max_depth option on individual unserialize() calls.
+; A value of 0 disables the depth limit.
+;unserialize_max_depth = 4096
+
 ; When floats & doubles are serialized, store serialize_precision significant
 ; digits after the floating point. The default value ensures that when floats
 ; are decoded with unserialize, the data will remain the same.
@@ -300,6 +302,7 @@ serialize_precision = -1
 ; open_basedir, if set, limits all file operations to the defined directory
 ; and below.  This directive makes most sense if used in a per-directory
 ; or per-virtualhost web server configuration file.
+; Note: disables the realpath cache
 ; http://php.net/open-basedir
 ;open_basedir =
 
@@ -332,6 +335,7 @@ disable_classes =
 ; Determines the size of the realpath cache to be used by PHP. This value should
 ; be increased on systems where PHP opens many files to reflect the quantity of
 ; the file operations performed.
+; Note: if open_basedir is set, the cache is disabled
 ; http://php.net/realpath-cache-size
 ;realpath_cache_size = 4096k
 
@@ -356,6 +360,12 @@ zend.enable_gc = On
 ; Only affects if zend.multibyte is set.
 ; Default: ""
 ;zend.script_encoding =
+
+; Allows to include or exclude arguments from stack traces generated for exceptions
+; Default: Off
+; In production, it is recommended to turn this setting on to prohibit the output
+; of sensitive information in stack traces
+zend.exception_ignore_args = On
 
 ;;;;;;;;;;;;;;;;;
 ; Miscellaneous ;
@@ -452,7 +462,7 @@ memory_limit = 128M
 ; Development Value: E_ALL
 ; Production Value: E_ALL & ~E_DEPRECATED & ~E_STRICT
 ; http://php.net/error-reporting
-error_reporting = E_ALL
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 
 ; This directive controls whether or not and where PHP will output errors,
 ; notices and warnings too. Error output is very useful during development, but
@@ -469,7 +479,7 @@ error_reporting = E_ALL
 ; Development Value: On
 ; Production Value: Off
 ; http://php.net/display-errors
-display_errors = On
+display_errors = Off
 
 ; The display of errors which occur during PHP's startup sequence are handled
 ; separately from display_errors. PHP's default behavior is to suppress those
@@ -480,7 +490,7 @@ display_errors = On
 ; Development Value: On
 ; Production Value: Off
 ; http://php.net/display-startup-errors
-display_startup_errors = On
+display_startup_errors = Off
 
 ; Besides displaying errors, PHP can also log errors to locations such as a
 ; server-specific log, STDERR, or a location specified by the error_log
@@ -509,7 +519,7 @@ ignore_repeated_errors = Off
 ignore_repeated_source = Off
 
 ; If this parameter is set to Off, then memory leaks will not be shown (on
-; stdout or in the log). This has only effect in a debug compile, and if
+; stdout or in the log). This is only effective in a debug compile, and if
 ; error reporting includes E_WARNING in the allowed list
 ; http://php.net/report-memleaks
 report_memleaks = On
@@ -517,7 +527,9 @@ report_memleaks = On
 ; This setting is on by default.
 ;report_zend_debug = 0
 
-; Store the last error/warning message in $php_errormsg (boolean).
+; Store the last error/warning message in $php_errormsg (boolean). Setting this value
+; to On can assist in debugging and is appropriate for development servers. It should
+; however be disabled on production servers.
 ; This directive is DEPRECATED.
 ; Default Value: Off
 ; Development Value: Off
@@ -536,11 +548,8 @@ report_memleaks = On
 ; error message as HTML for easier reading. This directive controls whether
 ; the error message is formatted as HTML or not.
 ; Note: This directive is hardcoded to Off for the CLI SAPI
-; Default Value: On
-; Development Value: On
-; Production value: On
 ; http://php.net/html-errors
-html_errors = On
+;html_errors = On
 
 ; If html_errors is set to On *and* docref_root is not empty, then PHP
 ; produces clickable error messages that direct to a page describing the error
@@ -591,9 +600,11 @@ html_errors = On
 ; control characters. If your logger accepts everything, then no filtering
 ; is needed at all.
 ; Allowed values are:
-;   ascii (only base ASCII characters)
-;   no_ctrl (all characters except control characters)
+;   ascii (all printable ASCII characters and NL)
+;   no-ctrl (all characters except control characters)
 ;   all (all characters)
+;   raw (like "all", but messages are not split at newlines)
+; http://php.net/syslog.filter
 ;syslog.filter = ascii
 
 ;windows.show_crt_warning
@@ -663,7 +674,7 @@ register_argc_argv = Off
 ; first used (Just In Time) instead of when the script starts. If these
 ; variables are not used within a script, having this directive on will result
 ; in a performance gain. The PHP directive register_argc_argv must be disabled
-; for this directive to have any affect.
+; for this directive to have any effect.
 ; http://php.net/auto-globals-jit
 auto_globals_jit = On
 
@@ -901,13 +912,13 @@ default_socket_timeout = 60
 ;
 ;extension=bz2
 ;extension=curl
+;extension=ffi
 ;extension=fileinfo
 ;extension=gd2
 ;extension=gettext
 ;extension=gmp
 ;extension=intl
 ;extension=imap
-;extension=interbase
 ;extension=ldap
 ;extension=mbstring
 ;extension=exif      ; Must be after mbstring as it depends on it
@@ -1002,7 +1013,18 @@ cli_server.color = On
 ;intl.use_exceptions = 0
 
 [sqlite3]
+; Directory pointing to SQLite3 extensions
+; http://php.net/sqlite3.extension-dir
 ;sqlite3.extension_dir =
+
+; SQLite defensive mode flag (only available from SQLite 3.26+)
+; When the defensive flag is enabled, language features that allow ordinary
+; SQL to deliberately corrupt the database file are disabled. This forbids
+; writing directly to the schema, shadow tables (eg. FTS data tables), or
+; the sqlite_dbpage virtual table.
+; https://www.sqlite.org/c3ref/c_dbconfig_defensive.html
+; (for older SQLite versions, this flag has no use)
+;sqlite3.defensive = 1
 
 [Pcre]
 ; PCRE library backtracking limit.
@@ -1111,37 +1133,6 @@ odbc.defaultlrl = 4096
 ; http://php.net/odbc.defaultbinmode
 odbc.defaultbinmode = 1
 
-[Interbase]
-; Allow or prevent persistent links.
-ibase.allow_persistent = 1
-
-; Maximum number of persistent links.  -1 means no limit.
-ibase.max_persistent = -1
-
-; Maximum number of links (persistent + non-persistent).  -1 means no limit.
-ibase.max_links = -1
-
-; Default database name for ibase_connect().
-;ibase.default_db =
-
-; Default username for ibase_connect().
-;ibase.default_user =
-
-; Default password for ibase_connect().
-;ibase.default_password =
-
-; Default charset for ibase_connect().
-;ibase.default_charset =
-
-; Default timestamp format.
-ibase.timestampformat = "%Y-%m-%d %H:%M:%S"
-
-; Default date format.
-ibase.dateformat = "%Y-%m-%d"
-
-; Default time format.
-ibase.timeformat = "%H:%M:%S"
-
 [MySQLi]
 
 ; Maximum number of persistent links.  -1 means no limit.
@@ -1172,11 +1163,11 @@ mysqli.default_port = 3306
 ; http://php.net/mysqli.default-socket
 mysqli.default_socket =
 
-; Default host for mysql_connect() (doesn't apply in safe mode).
+; Default host for mysqli_connect() (doesn't apply in safe mode).
 ; http://php.net/mysqli.default-host
 mysqli.default_host =
 
-; Default user for mysql_connect() (doesn't apply in safe mode).
+; Default user for mysqli_connect() (doesn't apply in safe mode).
 ; http://php.net/mysqli.default-user
 mysqli.default_user =
 
@@ -1198,7 +1189,7 @@ mysqlnd.collect_statistics = On
 
 ; Enable / Disable collection of memory usage statistics by mysqlnd which can be
 ; used to tune and monitor MySQL operations.
-mysqlnd.collect_memory_statistics = On
+mysqlnd.collect_memory_statistics = Off
 
 ; Records communication from all extensions using mysqlnd to the specified log
 ; file.
@@ -1577,7 +1568,7 @@ session.sid_bits_per_character = 5
 ; Development Value: 1
 ; Production Value: -1
 ; http://php.net/zend.assertions
-zend.assertions = 1
+zend.assertions = -1
 
 ; Assert(expr); active by default.
 ; http://php.net/assert.active
@@ -1698,6 +1689,16 @@ zend.assertions = 1
 ; Default: mbstring.http_output_conv_mimetype=^(text/|application/xhtml\+xml)
 ;mbstring.http_output_conv_mimetype=
 
+; This directive specifies maximum stack depth for mbstring regular expressions. It is similar
+; to the pcre.recursion_limit for PCRE.
+; Default: 100000
+;mbstring.regex_stack_limit=100000
+
+; This directive specifies maximum retry count for mbstring regular expressions. It is similar
+; to the pcre.backtrack_limit for PCRE.
+; Default: 1000000
+;mbstring.regex_retry_limit=1000000
+
 [gd]
 ; Tell the jpeg decode to ignore warnings and try to create
 ; a gd image. The warning will then be displayed as notices
@@ -1770,7 +1771,7 @@ ldap.max_links = -1
 
 [opcache]
 ; Determines if Zend OPCache is enabled
-opcache.enable=1
+;opcache.enable=1
 
 ; Determines if Zend OPCache is enabled for the CLI version of PHP
 ;opcache.enable_cli=0
@@ -1816,7 +1817,6 @@ opcache.enable=1
 ; A bitmask, where each bit enables or disables the appropriate OPcache
 ; passes
 ;opcache.optimization_level=0x7FFFBFFF
-opcache.optimization_level=0x7FFFBBFF
 
 ;opcache.dups_fix=0
 
@@ -1866,6 +1866,10 @@ opcache.optimization_level=0x7FFFBBFF
 ; errors.
 ;opcache.mmap_base=
 
+; Facilitates multiple OPcache instances per user (for Windows only). All PHP
+; processes with the same cache ID and user share an OPcache instance.
+;opcache.cache_id=
+
 ; Enables and sets the second level cache directory.
 ; It should improve performance when SHM memory is full, at server restart or
 ; SHM reset. The default "" disables file based caching.
@@ -1884,7 +1888,7 @@ opcache.optimization_level=0x7FFFBBFF
 
 ; Enables or disables copying of PHP code (text segment) into HUGE PAGES.
 ; This should improve performance, but requires appropriate OS configuration.
-;opcache.huge_code_pages=0
+;opcache.huge_code_pages=1
 
 ; Validate cached file permissions.
 ;opcache.validate_permission=0
@@ -1895,6 +1899,24 @@ opcache.optimization_level=0x7FFFBBFF
 ; If specified, it produces opcode dumps for debugging different stages of
 ; optimizations.
 ;opcache.opt_debug_level=0
+
+; Specifies a PHP script that is going to be compiled and executed at server
+; start-up.
+; http://php.net/opcache.preload
+;opcache.preload=
+
+; Preloading code as root is not allowed for security reasons. This directive
+; facilitates to let the preloading to be run as another user.
+; http://php.net/opcache.preload_user
+;opcache.preload_user=
+
+; Prevents caching files that are less than this number of seconds old. It
+; protects from caching of incompletely updated files. In case all file updates
+; on your site are atomic, you may increase performance by setting it to "0".
+;opcache.file_update_protection=2
+
+; Absolute path used to store shared lockfiles (for *nix only).
+;opcache.lockfile_path=/tmp
 
 [curl]
 ; A default value for the CURLOPT_CAINFO option. This is required to be an
@@ -1919,6 +1941,12 @@ opcache.optimization_level=0x7FFFBBFF
 ; SSL stream context option.
 ;openssl.capath=
 
-; Local Variables:
-; tab-width: 4
-; End:
+[ffi]
+; FFI API restriction. Possible values:
+; "preload" - enabled in CLI scripts and preloaded files (default)
+; "false"   - always disabled
+; "true"    - always enabled
+;ffi.enable=preload
+
+; List of headers files to preload, wildcard patterns allowed.
+;ffi.preload=
