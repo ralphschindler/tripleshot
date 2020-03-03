@@ -32,7 +32,6 @@ DEBIAN_FRONTEND=noninteractive \
     php7.4-pgsql \
     php7.4-redis \
     php7.4-sqlite \
-    php7.4-xdebug \
     php7.4-xml \
     php7.4-zip \
     unzip \
