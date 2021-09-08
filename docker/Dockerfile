@@ -1,20 +1,3 @@
-FROM phusion/baseimage:0.11 AS php-xdebug
-
-RUN apt-add-repository -y ppa:ondrej/php \
-    && install_clean \
-        pkg-config \
-        php7.4-dev \
-        git
-
-WORKDIR /root
-
-RUN git clone https://github.com/jimbojsb/xdebug.git
-
-WORKDIR /root/xdebug
-
-RUN phpize && ./configure && make
-
-
 FROM phusion/baseimage:0.11
 
 ENV TERM="xterm-256color" \
@@ -35,6 +18,6 @@ ADD . /build
 
 RUN /build/packages.sh && /build/setup.sh
 
-COPY --from=php-xdebug /root/xdebug/modules/xdebug.so /usr/lib/php/20190902/xdebug.so
+COPY --from=docker.pkg.github.com/ralphschindler/tripleshot/php74-xdebug:latest /xdebug.so /usr/lib/php/20190902/xdebug.so
 
 WORKDIR /app

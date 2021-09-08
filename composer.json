@@ -1,0 +1,20 @@
+{
+    "name": "ralphschindler/tripleshot",
+    "description": "Dockerizer",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ralph Schindler",
+            "email": "ralph@ralphschindler.com"
+        }
+    ],
+    "require": {
+        "symfony/console": "4.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tripleshot\\": "src/"
+        }
+    }
+}

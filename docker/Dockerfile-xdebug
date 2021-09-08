@@ -1,0 +1,15 @@
+FROM phusion/baseimage:0.11
+
+RUN apt-add-repository -y ppa:ondrej/php \
+    && install_clean pkg-config php7.4-dev git \
+    && cd /root \
+    && git clone https://github.com/jimbojsb/xdebug.git \
+    && cd /root/xdebug \
+    && phpize \
+    && ./configure \
+    && make \
+    && cp modules/xdebug.so /xdebug.so \
+    && cd /root \
+    && rm -Rf /root/xdebug \
+    && apt-get -y purge git php7.4-dev pkg-config \
+    && apt-get -y autoremove

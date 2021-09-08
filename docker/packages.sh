@@ -37,10 +37,6 @@ DEBIAN_FRONTEND=noninteractive \
     unzip \
     zip
 
-# cleanup after one's self
-apt-get clean
-rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 # install php's composer
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 mv /usr/local/composer.phar /usr/local/bin/composer
